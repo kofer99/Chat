@@ -22,6 +22,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
+import net.client.ClientNet;
+import net.server.Server;
 
 public class Gui extends Application {
 	BorderPane bordPane = new BorderPane();
@@ -42,6 +44,8 @@ public class Gui extends Application {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		launch(args);
+		Server s = new Server();
+		ClientNet c = new ClientNet();
 	}
 
 	@Override
@@ -80,7 +84,7 @@ public class Gui extends Application {
 					protected void updateItem(Client item, boolean empty) {
 					     super.updateItem(item, empty);
 					     if(item == null){
-					    	 System.out.println("haha");
+					    //	 System.out.println("haha");
 					     }
 					     if (empty || item == null) {
 					         setText(null);
@@ -91,11 +95,7 @@ public class Gui extends Application {
 
 				};}	});
 
-		// Bindings.bindBidirectional(test.accessibleTextProperty(),
-		// Client.nickname);
-		// test.accessibleTextProperty().set(Client.getNicknameValue());
 
-		// test.getColumns().add(nickcl);
 
 		test.setEditable(true);
 
@@ -105,8 +105,7 @@ public class Gui extends Application {
 		Client cc = new Client("BAcka");
 		data.add(ac);
 		data.add(cc);
-		// users.setText("ssssssssss");
-		// bordPane.setBottom(sendButton);
+
 
 	}
 

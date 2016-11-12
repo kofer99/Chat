@@ -101,7 +101,7 @@ public class Gui extends Application {
 
 		test.setItems(data);
 
-		Client ac = new Client("asdas");
+		Client ac = new Client("asdasa");
 		Client cc = new Client("BAcka");
 		data.add(ac);
 		data.add(cc);

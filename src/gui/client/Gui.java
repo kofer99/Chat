@@ -66,8 +66,7 @@ public class Gui extends Application {
 			@Override
 			public void handle(WindowEvent event) {
 				// TODO Auto-generated method stub
-				if(ChatsServer.IsRunning)
-				ChatsServer.Stop();
+			
 			}
 			
 		});
@@ -123,7 +122,7 @@ public class Gui extends Application {
 			public void handle(ActionEvent event) {
 				if(nickname.getText().length()> 0){
 				 cc.SetNickName(nickname.getText());
-				data.add(cc.getNickName());
+				data.add(cc.NickName);
 				dialog.close();
 				}
 			}

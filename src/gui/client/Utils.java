@@ -19,10 +19,6 @@ public class Utils
 
             int i = in.read();
 
-            // Check for special chars
-            if (i == 0)
-                return ReadUnicode(in);
-
             while (in.available() > 0)
             {
                 result += (char) i;
@@ -39,10 +35,20 @@ public class Utils
 
         return result;
     }
-
-    public static String ReadUnicode(InputStream in)
+    
+    public static String[] SplitInput(String message)
     {
-        // TODO
-        return "";
+        String[] orders = message.split("\n");
+        return RemoveBOM(orders);
+    }
+    
+    public static String[] RemoveBOM(String[] input)
+    {
+        for (int i = 0; i < input.length; i++)
+        {
+            // Remove the \n BOM
+            input[i] = input[i].substring(0, input[i].length() - 1);
+        }
+        return input;
     }
 }

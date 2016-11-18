@@ -38,23 +38,60 @@ public class ChatsClient
         }
         catch (IOException e)
         {
+            // TODO: Start a new server here if none exists yet
+
             e.printStackTrace();
-    
-            
         }
     }
 
+    public void SetNickName(String newNick)
+    {
+        try
+        {
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), false);
 
+            out.println("/nickname");
+            out.println(ClientID);
+            out.println(NickName);
+            out.println(newNick);
+            out.flush();
 
-    public boolean SetNickName(String newNick)
+            print("Waiting for approval to change nickname from '" + NickName + "' to '" + newNick + "'...");
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    void changeNick(String newNick)
     {
         NickName = newNick;
-
-        // TODO: The server needs to validate this
-        return true;
     }
-    public String getNickName(){
-    	return NickName;
+
+    boolean hack;
+    String[] names;
+    public String[] FetchClientNames()
+    {
+        try
+        {
+            hack = true;
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), false);
+
+            out.println("/fetchnames");
+            //out.println(ClientID);
+            out.flush();
+
+            print("Waiting for list of client names...");
+
+            // HACK: Ugh
+            while (hack) { }
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        return Utils.RemoveBOM(names);
     }
 
     // Make this a bool as well?
@@ -65,12 +102,12 @@ public class ChatsClient
             print("Socket closed. Can't send \"" + message + "\"!");
             return;
         }
-        
+
         try
         {
             PrintWriter out = new PrintWriter(socket.getOutputStream(), false);
 
-            out.print("[" + NickName + "] " + message);
+            out.println("[" + NickName + "] " + message);
             out.flush();
 
             print("Sent message \"" + message + "\"!");
@@ -80,7 +117,7 @@ public class ChatsClient
             e.printStackTrace();
         }
     }
-    
+
     void OutputReceived(String message)
     {
         print("Output: " + message);
@@ -93,7 +130,8 @@ public class ChatsClient
         {
             PrintWriter out = new PrintWriter(socket.getOutputStream(), false);
 
-            out.print("Expecting Client ID");
+            out.println("/clientID");
+            out.println(NickName);
             out.flush();
 
             print("Waiting for a client ID...");
@@ -113,7 +151,6 @@ public class ChatsClient
 class MessageReceiver extends Thread
 {
     ChatsClient client;
-    boolean firstMessage = true;
 
     public MessageReceiver(ChatsClient client)
     {
@@ -136,15 +173,28 @@ class MessageReceiver extends Thread
                     continue;
                 }
 
-                client.print("Received: " + message);
+                String[] orders = Utils.SplitInput(message);
 
-                // "HACK": Ugh
-                // The first message should be the client ID
-                if (firstMessage)
+                if (orders[0].equals("/clientID"))
                 {
-                    firstMessage = false;
-                    client.ClientID = Integer.parseInt(message);
+                    client.ClientID = Integer.parseInt(orders[1]);
                     client.print("Got assigned to client ID: " + client.ClientID);
+                }
+                else if (orders[0].equals("/nickchange"))
+                {
+                    boolean consent = Boolean.parseBoolean(orders[1]);
+                    client.print("Got consent for nickname change: " + consent);
+                    if (consent)
+                        client.changeNick(orders[2]);
+                }
+                else if (orders[0].equals("/fetchnames"))
+                {
+                    String[] names = new String[orders.length - 1];
+                    for (int i = 0; i < names.length; i++)
+                        names[i] = orders[i + 1];
+
+                    client.hack = false;
+                    client.names = names;
                 }
                 else
                     client.OutputReceived(message);

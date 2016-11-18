@@ -7,18 +7,20 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.Hashtable;
 
 /**
  * Lukas Franke
  */
 public class ChatsServer
 {
-    public static ArrayList<Socket> Clients = new ArrayList<Socket>();
-    public static boolean IsRunning;
+    public ArrayList<Socket> Clients = new ArrayList<Socket>();
+    public boolean IsRunning;
     public int ClientIDs;
     public ServerSocket HostSocket;
 
     ConnectionAccepter connAccepter;
+    Hashtable<Integer, String> clientNicksByID = new Hashtable<Integer, String>();
     MainLoop looper;
     int port = 5123;
     String host = "localhost";
@@ -44,7 +46,7 @@ public class ChatsServer
         }
     }
 
-    public static void Stop()
+    public void Stop()
     {
         try
         {
@@ -90,7 +92,7 @@ class MainLoop extends Thread
 
                 ArrayList<String> currentOutput = new ArrayList<String>(toOutput);
                 toOutput.clear();
-                    
+
                 // Nicht enumerieren waehrend die Liste veraendert wird
                 ArrayList<Socket> sockets = new ArrayList<Socket>(server.Clients);
                 for (Socket s : sockets)
@@ -108,7 +110,7 @@ class MainLoop extends Thread
                     // Send all old received messages beforehand
                     for (String m : currentOutput)
                     {
-                        out.print(m);
+                        out.println(m);
                         out.flush();
                     }
 
@@ -124,24 +126,65 @@ class MainLoop extends Thread
 
                     server.print("Received: " + message);
 
-                    if (message.equals("Expecting Client ID"))
+                    // TODO: We need to validate this as non-user input
+                    if (message.startsWith("/clientID"))
                     {
+                        // 1 is the client's NickName
+                        String[] orders = message.split("\n");
                         server.print("Client expecting ID");
 
                         // TODO: This is probably not a good idea, or at least not good practice
-                        server.ClientIDs++;
-                        int id = server.ClientIDs;
-                        server.print("Assigning ID " + id);
+                        int id = ++server.ClientIDs;
+                        server.clientNicksByID.put(id, orders[1]);
+                        server.print("Assigning ID " + id + " to nick '" + orders[1] + "'");
 
-                        out.print(id);
+                        out.println("/clientID");
+                        out.println(id);
                         out.flush();
                         server.print("Sent message!");
                     }
-                    else if (message.equals("Disconnect"))
+                    else if (message.startsWith("/nickname"))
+                    {
+                        // 1 is the ClientID, 2 the old Nickname, 3 the new one
+                        String[] orders = message.split("\n");
+
+                        if (server.clientNicksByID.containsValue(orders[3]))
+                        {
+                            out.println("/nickchange");
+                            out.println("false");
+                            out.flush();
+
+                            server.print("Invalid nick change request by client " + orders[1] + " ('" + orders[2] + "' to '" + orders[3] + "').");
+                        }
+                        else
+                        {
+                            // substring to get rid of the \n
+                            server.clientNicksByID.put(Integer.parseInt(orders[1].substring(0, 1)), orders[3]);
+                            toOutput.add("'" + orders[2] + "' changed their name to '" + orders[3] + "'.");
+
+                            out.println("/nickchange");
+                            out.println("true");
+                            out.println(orders[3]);
+                            out.flush();
+
+                            server.print("Changing nick of client " + orders[1] + " from '" + orders[2] + "' to '" + orders[3] + "'.");
+                        }
+                    }
+                    else if (message.startsWith("/fetchnames"))
+                    {
+                        out.println("/fetchnames");
+                        for (String n : server.clientNicksByID.values())
+                            out.println(n);
+
+                        out.flush();
+                        server.print("Sending a list of client names.");
+                    }
+                    else if (message.equals("/disconnect"))
                     {
                         server.print("Client disconnecting. Sending goodby message...");
 
-                        out.print("Good bye!");
+                        out.println("/disconnect");
+                        out.println("Good bye!");
                         out.flush();
 
                         server.print("Closing connection!");

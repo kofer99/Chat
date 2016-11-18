@@ -11,7 +11,7 @@ import java.net.*;
  */
 public class ChatsClient
 {
-	public Gui gui = new Gui();
+	public Gui gui ;
 	
     public int ClientID;
     public String NickName;
@@ -21,8 +21,9 @@ public class ChatsClient
     Socket socket;
     String host = "localhost";
 
-    public ChatsClient(String nickname)
+    public ChatsClient(String nickname, Gui gui)
     {
+    	this.gui = gui;
         NickName = nickname;
         try
         {
@@ -43,7 +44,7 @@ public class ChatsClient
         }
     }
 
-	
+
 
     public boolean SetNickName(String newNick)
     {
@@ -83,7 +84,7 @@ public class ChatsClient
     void OutputReceived(String message)
     {
         print("Output: " + message);
-        Gui.printMessage(message);
+        gui.printMessage(message);
     }
 
     void FetchClientID()

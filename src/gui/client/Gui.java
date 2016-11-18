@@ -21,11 +21,13 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.InputEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 
 
@@ -34,30 +36,41 @@ public class Gui extends Application {
 	BorderPane bordPane = new BorderPane();
 	Scene scene = new Scene(bordPane, 512, 512);
 	TextField textField = new TextField();
-	static TextArea Chat = new TextArea();
+	 TextArea Chat = new TextArea();
 	Button sendButton = new Button("Send");
 	HBox messageSender = new HBox();
 	Button menubtn = new Button("Menu");
 	HBox menu = new HBox();
 	ChatsClient cc ;
-	ListView<ChatsClient> test = new ListView<ChatsClient>();
+	ListView<String> test = new ListView<String>();
 
-	final ObservableList<ChatsClient> data = FXCollections.observableArrayList(
+	final ObservableList<String> data = FXCollections.observableArrayList(
 
 	);
+	
+
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		
 		new ChatsServer();
-		launch(args);
-		
+		launch(args);		
 		
 	}
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		// TODO Auto-generated method stub
+		cc = new ChatsClient("Temp", this);
+		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+
+			@Override
+			public void handle(WindowEvent event) {
+				// TODO Auto-generated method stub
+				if(ChatsServer.IsRunning)
+				ChatsServer.Stop();
+			}
+			
+		});
 		
 		primaryStage.setScene(scene);
 		
@@ -70,7 +83,7 @@ public class Gui extends Application {
 
 
 	}
-	public static void printMessage(String message){
+	public  void printMessage(String message){
 		if(Chat.getText().length()<= 0){
 			Chat.setText(message);
 		}else{
@@ -86,17 +99,21 @@ public class Gui extends Application {
 		dialog.setScene(scene);
 		Button ok = new Button("Ok");
 		Label nickname_l = new Label("Nickname: ");
-
+		
 		TextField nickname = new TextField();
-
+		Label IpAddresse = new Label("Ip: ");
+		
+		TextField Ip = new TextField();
 	//	vorname.setAccessibleText("bla");
 		grid.add(nickname_l, 0, 0);
 
 		grid.add(nickname, 1, 0);
-
+		grid.add(IpAddresse, 0, 1);
+		grid.add(Ip, 1, 1);
 		grid.add(ok,1,2);
 		String name = "";
 		dialog.show();
+		
 		
 		
 		
@@ -105,8 +122,8 @@ public class Gui extends Application {
 			@Override
 			public void handle(ActionEvent event) {
 				if(nickname.getText().length()> 0){
-				 cc = new ChatsClient(nickname.getText());
-				data.add(cc);
+				 cc.SetNickName(nickname.getText());
+				data.add(cc.getNickName());
 				dialog.close();
 				}
 			}
@@ -115,8 +132,13 @@ public class Gui extends Application {
 		
 		
 	}
-
+	void addtoData(String newNick){
+		data.add(newNick);
+	}
 	void setupGui() {
+		
+		
+		scene.getStylesheets().add("gui/client/application.css");
 		
 		bordPane.setTop(menu);
 		menu.getChildren().add(menubtn);
@@ -130,23 +152,23 @@ public class Gui extends Application {
 		test.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
 			System.out.println("Selected item: " + newValue);
 
-			System.out.println("Selected item: " + newValue.getNickName());
+			//System.out.println("Selected item: " + newValue.getNickName());
 
 		});
 
-		test.setCellFactory(new Callback<ListView<ChatsClient>, ListCell<ChatsClient>>() {
+		test.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
 
 			@Override
-			public ListCell<ChatsClient> call(ListView<ChatsClient> param) {
+			public ListCell<String> call(ListView<String> param) {
 				// TODO Auto-generated method stub
-				return  new ListCell<ChatsClient>(){
-					protected void updateItem(ChatsClient item, boolean empty) {
+				return  new ListCell<String>(){
+					protected void updateItem(String item, boolean empty) {
 					     super.updateItem(item, empty);
 					
 					     if (empty || item == null) {
 					         setText(null);
 					     } else {
-					         setText(item.getNickName());
+					         setText(item);
 					     }
 					 }
 

@@ -13,8 +13,8 @@ import java.util.ArrayList;
  */
 public class ChatsServer
 {
-    public ArrayList<Socket> Clients = new ArrayList<Socket>();
-    public boolean IsRunning;
+    public static ArrayList<Socket> Clients = new ArrayList<Socket>();
+    public static boolean IsRunning;
     public int ClientIDs;
     public ServerSocket HostSocket;
 
@@ -44,7 +44,7 @@ public class ChatsServer
         }
     }
 
-    public void Stop()
+    public static void Stop()
     {
         try
         {

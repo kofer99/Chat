@@ -193,8 +193,9 @@ class MessageReceiver extends Thread
                     for (int i = 0; i < names.length; i++)
                         names[i] = orders[i + 1];
 
-                    client.hack = false;
+                  
                     client.names = names;
+                    client.hack = false;
                 }
                 else
                     client.OutputReceived(message);

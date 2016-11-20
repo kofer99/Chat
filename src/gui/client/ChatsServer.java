@@ -2,9 +2,9 @@ package gui.client;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -48,14 +48,21 @@ public class ChatsServer
 
     public void Stop()
     {
+        if (!IsRunning)
+        {
+            print("Already closed!");
+            return;
+        }
+
         try
         {
             IsRunning = false;
 
-            // .stop() is deprecated?!
-            // connAccepter.stop();
-            // looper.stop();
+            // .interrupt() should kill the thread
+            //connAccepter.interrupt();
+            //looper.interrupt();
 
+            HostSocket.close();
             for (Socket s : Clients)
                 s.close();
         }
@@ -124,7 +131,7 @@ class MainLoop extends Thread
                         continue;
                     }
 
-                    server.print("Received: " + message);
+                    //server.print("Received: " + message);
 
                     // TODO: We need to validate this as non-user input
                     if (message.startsWith("/clientID"))
@@ -143,7 +150,7 @@ class MainLoop extends Thread
                         out.flush();
                         server.print("Sent message!");
                     }
-                    else if (message.startsWith("/nickname"))
+                    else if (message.startsWith("/nickname") || message.startsWith("/nick"))
                     {
                         // 1 is the ClientID, 2 the old Nickname, 3 the new one
                         String[] orders = message.split("\n");
@@ -177,7 +184,7 @@ class MainLoop extends Thread
                             out.println(n);
 
                         out.flush();
-                        server.print("Sending a list of client names.");
+                        //server.print("Sending a list of client names.");
                     }
                     else if (message.equals("/disconnect"))
                     {
@@ -189,7 +196,7 @@ class MainLoop extends Thread
 
                         server.print("Closing connection!");
                         s.close();
-                        server.print("Sent message!");
+                        server.print("Connection closed!");
                     }
                     else
                     {
@@ -225,6 +232,11 @@ class ConnectionAccepter extends Thread
                 server.Clients.add(socket);
                 server.print("Server accepted connection");
             }
+        }
+        catch (SocketException e)
+        {
+            if (e.toString().endsWith("socket closed"))
+                server.print("Server socket successfully closed!");
         }
         catch (IOException e)
         {

@@ -1,10 +1,11 @@
 package gui.client;
 
+import java.util.ArrayList;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
@@ -22,7 +23,11 @@ import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 
-public class Gui extends Application {
+/**
+ * Lukas Franke, Daniel Neufeld
+ */
+public class Gui extends Application
+{
 	BorderPane bordPane = new BorderPane();
 	Scene scene = new Scene(bordPane, 512, 512);
 	TextField textField = new TextField();
@@ -32,106 +37,94 @@ public class Gui extends Application {
 	Button menubtn = new Button("Menu");
 	HBox menu = new HBox();
 	ChatsClient cc;
-	ListView<String> test = new ListView<String>();
+	ListView<String> nickList = new ListView<String>();
 	NameUpdater nameUpdater;
 
-	public final ObservableList<String> data = FXCollections.observableArrayList(
-
-	);
-
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-		new ChatsServer();
+	public static void main(String[] args)
+	{
 		launch(args);
-
 	}
+
+	// TODO: We don't want to store this here
+	ChatsServer server;
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
-		// TODO Auto-generated method stub
-		cc = new ChatsClient("Temp", this);
+		server = new ChatsServer();
+		cc = new ChatsClient(this);
 
-		
-
-		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-
+		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>()
+		{
 			@Override
-			public void handle(WindowEvent event) {
-				// TODO Auto-generated method stub
-
+			public void handle(WindowEvent event)
+			{
+				server.Stop();
+				cc.Disconnect();
 			}
-
 		});
 
 		primaryStage.setScene(scene);
-
-		primaryStage.show();
-		StartupClient();
-		setupGui();
-		textField.setPromptText("Enter Message");
-		Chat.setPromptText("Keine Nachrichten");
-		setResize();
-	
-
+		StartupClient(primaryStage);
 	}
 
-	public void printMessage(String message) {
-		if (Chat.getText().length() <= 0) {
-			Chat.setText(message);
-		} else {
-			Chat.setText(Chat.getText() + "\n" + message);
-		}
-
+	public void printMessage(String message)
+	{
+		Chat.setText(Chat.getText() + message);
 	}
 
-	public void StartupClient() {
+	public void StartupClient(Stage primaryStage)
+	{
 		GridPane grid = new GridPane();
 		Stage dialog = new Stage();
 		dialog.initStyle(StageStyle.UTILITY);
-		Scene scene = new Scene(grid, 400, 400);
+		Scene scene = new Scene(grid, 230, 90);
 		dialog.setScene(scene);
-		Button ok = new Button("Ok");
+
+		Button ok = new Button("Connect");
 		Label nickname_l = new Label("Nickname: ");
-
 		TextField nickname = new TextField();
+		nickname.setText("Newbie");
 		Label IpAddresse = new Label("Ip: ");
-
 		TextField Ip = new TextField();
-		// vorname.setAccessibleText("bla");
-		grid.add(nickname_l, 0, 0);
+		Ip.setText("localhost");
 
+		grid.add(nickname_l, 0, 0);
 		grid.add(nickname, 1, 0);
 		grid.add(IpAddresse, 0, 1);
 		grid.add(Ip, 1, 1);
 		grid.add(ok, 1, 2);
-		String name = "";
 		dialog.show();
 
-		ok.setOnAction(new EventHandler<ActionEvent>() {
-
+		ok.setOnAction(new EventHandler<ActionEvent>()
+		{
 			@Override
-			public void handle(ActionEvent event) {
-				if (nickname.getText().length() > 0) {
-					cc.SetNickName(nickname.getText());
-					data.add(cc.NickName);
+			public void handle(ActionEvent event)
+			{
+				String nick = nickname.getText();
+				if (nick.length() <= 0)
+					return;
 
-					dialog.close();
+				cc.SetNickName(nick);
 
-				}
+				primaryStage.show();
+				setupGui();
+				setResize();
+
+				dialog.close();
 			}
-
 		});
-
 	}
 
-	void addtoData(String newNick) {
-		data.add(newNick);
+	void updateNickList(ArrayList<String> newNicks)
+	{
+		nickList.setItems(FXCollections.observableArrayList(newNicks));
 	}
 
-	void setupGui() {
-		nameUpdater = new NameUpdater(cc, this);
-		test.setItems(data);
-	//	nameUpdater.start();
+	void setupGui()
+	{
+		textField.setPromptText("Enter Message");
+		Chat.setPromptText("Keine Nachrichten");
+
 		scene.getStylesheets().add("gui/client/application.css");
 
 		bordPane.setTop(menu);
@@ -140,69 +133,45 @@ public class Gui extends Application {
 		messageSender.getChildren().addAll(textField, sendButton);
 		bordPane.setCenter(Chat);
 		Chat.setEditable(false);
-		bordPane.setRight(test);
-		test.setMaxWidth(90);
+		bordPane.setRight(nickList);
+		nickList.setMaxWidth(90);
 
-		test.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+		nickList.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
 			System.out.println("Selected item: " + newValue);
-
-			// System.out.println("Selected item: " + newValue.getNickName());
-
 		});
 
-		test.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
-
+		nickList.setCellFactory(new Callback<ListView<String>, ListCell<String>>()
+		{
 			@Override
-			public ListCell<String> call(ListView<String> param) {
-				// TODO Auto-generated method stub
-				return new ListCell<String>() {
-					protected void updateItem(String item, boolean empty) {
+			public ListCell<String> call(ListView<String> param)
+			{
+				return new ListCell<String>()
+				{
+					protected void updateItem(String item, boolean empty)
+					{
 						super.updateItem(item, empty);
-
-						if (empty || item == null) {
-							setText(null);
-						} else {
-							setText(item);
-						}
+						setText(item);
 					}
-
 				};
 			}
 		});
 
-		test.setEditable(true);
+		// This was 'true' before. Why?
+		nickList.setEditable(false);
 
-		menubtn.setOnAction(new EventHandler<ActionEvent>() {
+		nameUpdater = new NameUpdater(cc, this);
+		nameUpdater.start();
 
+		sendButton.setOnAction(new EventHandler<ActionEvent>()
+		{
 			@Override
-			public void handle(ActionEvent event) {
-				// TODO Auto-generated method stub
-				data.clear();
-				String[] names;
-				names = cc.FetchClientNames();
-				for(int i = 0; i < names.length; i++){
-					data.add(names[i]);
-					
-				}
-				
-				
+			public void handle(ActionEvent event)
+			{
+				String input = textField.getText();
+				if (input.length() >= 0)
+					cc.SendMessage(input);
 			}
-			
 		});
-
-		sendButton.setOnAction(new EventHandler<ActionEvent>() {
-
-			@Override
-			public void handle(ActionEvent event) {
-				if (textField.getText().length() >= 0) {
-
-					cc.SendMessage(textField.getText());
-
-				}
-			}
-
-		});
-
 	}
 
 	void setResize() {
@@ -231,24 +200,40 @@ public class Gui extends Application {
 	}
 }
 
-class NameUpdater extends Thread {
+class NameUpdater extends Thread
+{
+	ArrayList<String> currentNicks;
 	ChatsClient client;
 	Gui gui;
 
-	public NameUpdater(ChatsClient client, Gui gui) {
+	public NameUpdater(ChatsClient client, Gui gui)
+	{
 		this.client = client;
 		this.gui = gui;
 	}
 
-	public void run() {
+	public void run()
+	{
+		while (client.IsConnected)
+		{
+			try
+			{
+				Thread.sleep(1000);
+			}
+			catch (InterruptedException e)
+			{
+				e.printStackTrace();
+			}
 
-		// gui.data.clear();
-		String[] nicks = client.FetchClientNames();
-		for (int i = 0; i <= nicks.length; i++) {
-			gui.data.add(nicks[i]);
-			System.out.println(nicks[i]);
+			String[] nicks = client.ConnectedNames;
+			if (nicks == null || nicks.length == 0)
+				continue;
+
+			currentNicks = new ArrayList<String>();
+			for (int i = 0; i < nicks.length; i++)
+				currentNicks.add(nicks[i]);
+
+			Platform.runLater(() -> gui.updateNickList(currentNicks));
 		}
-
 	}
-
 }

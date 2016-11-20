@@ -2,7 +2,6 @@ package gui.client;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.*;
 
@@ -11,26 +10,28 @@ import java.net.*;
  */
 public class ChatsClient
 {
-	public Gui gui ;
-	
+    public boolean IsConnected;
+    public boolean IsHost;
+    public Gui gui;
     public int ClientID;
-    public String NickName;
+    public String NickName = "Newbie";
+    public String[] ConnectedNames;
 
     int port = 5123;
     MessageReceiver receiver;
     Socket socket;
     String host = "localhost";
 
-    public ChatsClient(String nickname, Gui gui)
+    public ChatsClient(Gui gui)
     {
-    	this.gui = gui;
-        NickName = nickname;
+        this.gui = gui;
         try
         {
             print("Starting client...");
             socket = new Socket();
             socket.connect(new InetSocketAddress(host, port));
 
+            IsConnected = true;
             print("Done!");
             FetchClientID();
             receiver = new MessageReceiver(this);
@@ -40,8 +41,15 @@ public class ChatsClient
         {
             // TODO: Start a new server here if none exists yet
 
+            IsConnected = false;
             e.printStackTrace();
         }
+    }
+
+    public ChatsClient(Gui gui, String nick)
+    {
+        this(gui);
+        NickName = nick;
     }
 
     public void SetNickName(String newNick)
@@ -64,34 +72,25 @@ public class ChatsClient
         }
     }
 
-    void changeNick(String newNick)
+    public void Disconnect()
     {
-        NickName = newNick;
-    }
+        if (!IsConnected)
+        {
+            print("Already disconnected!");
+            return;
+        }
 
-    boolean hack;
-    String[] names;
-    public String[] FetchClientNames()
-    {
+        IsConnected = false;
+
+        // TODO
         try
         {
-            hack = true;
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), false);
-
-            out.println("/fetchnames");
-            //out.println(ClientID);
-            out.flush();
-
-            print("Waiting for list of client names...");
-
-            // HACK: Ugh
-            while (hack) { }
+            socket.close();
         }
         catch (IOException e)
         {
             e.printStackTrace();
         }
-        return Utils.RemoveBOM(names);
     }
 
     // Make this a bool as well?
@@ -151,6 +150,7 @@ public class ChatsClient
 class MessageReceiver extends Thread
 {
     ChatsClient client;
+    int fetchDelay;
 
     public MessageReceiver(ChatsClient client)
     {
@@ -163,6 +163,18 @@ class MessageReceiver extends Thread
         {
             while (!client.socket.isClosed())
             {
+                // Order a new list of client names around every second
+                if (fetchDelay-- < 0)
+                {
+                    fetchDelay = 1000;
+                    PrintWriter out = new PrintWriter(client.socket.getOutputStream(), false);
+
+                    out.println("/fetchnames");
+                    out.flush();
+
+                    //client.print("Waiting for list of client names...");
+                }
+
                 InputStream in = client.socket.getInputStream();
                 //client.print("Checking own Input Stream for messages...");
 
@@ -185,7 +197,7 @@ class MessageReceiver extends Thread
                     boolean consent = Boolean.parseBoolean(orders[1]);
                     client.print("Got consent for nickname change: " + consent);
                     if (consent)
-                        client.changeNick(orders[2]);
+                        client.NickName = orders[2];
                 }
                 else if (orders[0].equals("/fetchnames"))
                 {
@@ -193,15 +205,17 @@ class MessageReceiver extends Thread
                     for (int i = 0; i < names.length; i++)
                         names[i] = orders[i + 1];
 
-                  
-                    client.names = names;
-                    client.hack = false;
+                    client.ConnectedNames = names;
                 }
                 else
                     client.OutputReceived(message);
 
-                client.print("Waiting for messages!");
+                //client.print("Waiting for messages!");
             }
+        }
+        catch (SocketException e)
+        {
+            client.print("Client socket closed!");
         }
         catch (IOException e)
         {
